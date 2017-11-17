@@ -4,3 +4,6 @@ typedef struct Buffer {
   char content[OUTPUT_LEN];
   int count;
 } Buffer; // Defines struct "Buffer" within struct name space
+
+Buffer* createMMAP(size_t size);
+void deleteMMAP(void* addr);

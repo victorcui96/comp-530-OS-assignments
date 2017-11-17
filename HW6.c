@@ -14,7 +14,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 #include <string.h>
 #include <errno.h>
 #include <sys/types.h>
@@ -24,7 +23,8 @@
 #include <signal.h> // kill
 #include <fcntl.h> // O_CREAT
 #include <semaphore.h> // POSIX semaphores Library
-
+// Custom includes
+#include "helper.h"
 #include "buffer.h"
 #define SEMAPHORE_NAME "/sharedSem"
 #define ERROR -1
@@ -34,10 +34,9 @@ void carriageReturnToBlankConversion(Buffer* mmap);
 void squashAsterisks(Buffer* mmap);
 void consumer(Buffer* mmap);
 // Other function prototypes
-Buffer* createMMAP(size_t size);
 pid_t forkChild(void (*func)(Buffer *), Buffer* state);
 void waitForChildren(pid_t*);
-void deleteMMAP(void*);
+// void deleteMMAP(void*);
 // get address of memory mapped location.
 Buffer* mmapFile;
 int main(int argc, char const *argv[])
@@ -59,32 +58,6 @@ int main(int argc, char const *argv[])
   // cleanup
   deleteMMAP(mmapFile);
   exit(EXIT_SUCCESS);
-}
-
-Buffer* createMMAP(size_t size) {
-  // These are the neccessary arguments for mmap. See man mmap.
-  void* addr = 0;
-  int protections = PROT_READ|PROT_WRITE; //can read and write
-  int flags = MAP_SHARED | MAP_ANONYMOUS; // if a process updates the file, want the update to be shared among all other processes
-  int fd = -1;
-  off_t offset = 0;
-  // Create memory map
-  Buffer* state =  mmap(addr, size, protections, flags, fd, offset);
-  if (( void *) ERROR == mmap) {
-    // on an error mmap returns void* -1.
-    perror("error with map");
-    exit(EXIT_FAILURE);
-  }
-  return state;
-}
-
-void deleteMMAP(void* addr) {
-  // This deletes the memory map at given address. see man mmap
-  if (ERROR == munmap(addr, sizeof(Buffer)))
-  {
-    perror("error deleting mmap");
-    exit(EXIT_FAILURE);
-  }
 }
 
 pid_t forkChild(void (*function) (Buffer *), Buffer* state) {
