@@ -20,13 +20,21 @@ Buffer* createMMAP(size_t size) {
     perror("error with map");
     exit(EXIT_FAILURE);
   }
-  // state->fullBuffers = sem_open(SEMAPHORE_NAME, O_CREAT, S_IREAD | S_IWRITE, 0);
-  // state->emptyBuffers = sem_open(
+  state->fullBuffers = sem_open(SEMAPHORE_NAME, O_CREAT, S_IREAD | S_IWRITE, 0);
+  state->emptyBuffers = sem_open(SEMAPHORE_NAME, O_CREAT, S_IREAD | S_IWRITE, 1);
   return state;
 }  
 // Producer process
 void deposit(char c, Buffer* dest) {
-    
+    sem_wait(&(dest->emptyBuffers));
+    dest->content[0] = c;
+    sem_post(&(dest->fullBuffers));
+}
+// Consumer process
+void remove(char* data, Buffer* src) {
+  sem_wait(&(src->fullBuffers));
+  *data = src->content[0];
+  sem_post(&(src->emptyBuffers));
 }
 void deleteMMAP(void* addr) {
   // This deletes the memory map at given address. see man mmap

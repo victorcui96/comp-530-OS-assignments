@@ -60,6 +60,7 @@ int main(int argc, char const *argv[])
   exit(EXIT_SUCCESS);
 }
 
+
 pid_t forkChild(void (*function) (Buffer *), Buffer* state) {
     // This function takes a pointer to a function as an argument.
     // It returns the forked child's PID
