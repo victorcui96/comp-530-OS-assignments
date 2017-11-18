@@ -36,12 +36,9 @@ void consumer(Buffer* mmap);
 // Other function prototypes
 pid_t forkChild(void (*func)(Buffer *), Buffer* state);
 void waitForChildren(pid_t*);
-// void deleteMMAP(void*);
-// get address of memory mapped location.
-Buffer* mmapFile;
 int main(int argc, char const *argv[])
 {
-  mmapFile = createMMAP(sizeof(Buffer));
+  Buffer* mmapFile = createMMAP(sizeof(Buffer));
   // fork children
   pid_t childpids[2];
   childpids[0] = forkChild(streamToCharConversion, mmapFile);
@@ -49,12 +46,6 @@ int main(int argc, char const *argv[])
 
   //wait for them
   waitForChildren(childpids);
-  // any semaphores we used must be unlinked
-  // sem_unlink removes semaphore from system once every process that has used the semaphore has closed it
-  if (sem_unlink(SEMAPHORE_NAME) == ERROR) {
-      perror("error while linking semaphore.");
-      exit(EXIT_FAILURE);
-  }
   // cleanup
   deleteMMAP(mmapFile);
   exit(EXIT_SUCCESS);
@@ -88,57 +79,16 @@ void waitForChildren(pid_t* childpids){
 }
 
 void streamToCharConversion(Buffer* mmap) {
-    // Read a char from stdin & writes it until array is full
-    // open the semaphore we need to use
-    // SEMAPHORE_NAME is the name of the semaphore to open
-    // O_CREAT specifies that the semaphore should be created if it does not already exist
-    // S_IREAD | S_IWRTIE gives us read & write permissions on the semaphore
-    // Initial value of semaphore = 0
-    sem_t* sem = sem_open(SEMAPHORE_NAME, O_CREAT, S_IREAD | S_IWRITE, 0);
-    if (sem == SEM_FAILED) {
-        perror("could not open semaphore");
-        exit(EXIT_FAILURE); 
-    }
     // reads a char from stdin & write it to mem mapped file
     char c = fgetc(stdin);
-    mmap->content[0] = c;
-    // increment value of sem by calling sem_post -> up() from lecture
-    if (sem_post(sem) == ERROR) {
-        perror("error incrementing semaphore");
-        exit(EXIT_FAILURE);
-    }
-    // close the semaphore we opened
-    if (sem_close(sem) == ERROR) {
-        perror("Error closing semaphore.");
-        exit(EXIT_FAILURE);
-    }
+    deposit(c, mmap);
     exit(EXIT_SUCCESS); 
 }
 
 void consumer(Buffer* mmap) {
-    // Read a char from stdin & writes it until array is full
-    // open the semaphore we need to use
-    // SEMAPHORE_NAME is the name of the semaphore to open
-    // O_CREAT specifies that the semaphore should be created if it does not already exist
-    // S_IREAD | S_IWRTIE gives us read & write permissions on the semaphore
-    // Initial value of semaphore = 0
-    sem_t* sem = sem_open(SEMAPHORE_NAME, O_CREAT, S_IREAD | S_IWRITE, 0);
-    if (sem == SEM_FAILED) {
-        perror("could not open semaphore");
-        exit(EXIT_FAILURE); 
-    }
-    // wait on sem -> down() from lecture
-    if (sem_wait(sem) == ERROR) {
-        perror("error while waiting on semaphore");
-        exit(EXIT_FAILURE);
-    } 
     // reads a char from mem mapped file & print it
-    char c = mmap->content[0];
-    // close the sem we opened
-    if (sem_close(sem) == ERROR) {
-        perror("Error closing semaphore.");
-        exit(EXIT_FAILURE);
-    }
+    char c;
+    remoove(&c, mmap);
     putchar(c);
     putchar('\n');
     exit(EXIT_SUCCESS);

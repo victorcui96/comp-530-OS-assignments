@@ -1,4 +1,3 @@
-
 /*
  * This is a sample program for using memory mapping.
  * It is done by the function mmap (see man 2 mmap).
