@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/mman.h> // mmap, munmap
@@ -40,9 +41,11 @@ int main(int argc, char const *argv[])
 {
   Buffer* mmapFile = createMMAP(sizeof(Buffer));
   // fork children
-  pid_t childpids[2];
+  pid_t childpids[3];
   childpids[0] = forkChild(streamToCharConversion, mmapFile);
-  childpids[1] = forkChild(consumer, mmapFile);
+  childpids[1] = forkChild(carriageReturnToBlankConversion, mmapFile);
+  childpids[2] = forkChild(squashAsterisks, mmapFile);
+  childpids[3] = forkChild(consumer, mmapFile);
 
   //wait for them
   waitForChildren(childpids);
@@ -50,7 +53,6 @@ int main(int argc, char const *argv[])
   deleteMMAP(mmapFile);
   exit(EXIT_SUCCESS);
 }
-
 
 pid_t forkChild(void (*function) (Buffer *), Buffer* state) {
     // This function takes a pointer to a function as an argument.
@@ -81,7 +83,8 @@ void waitForChildren(pid_t* childpids){
 void streamToCharConversion(Buffer* mmap) {
     // reads a char from stdin & writes to mem mapped file, until array is full */
     while (1) {
-      char c = fgetc(stdin);
+      char c = getchar();
+      // printf("char seen from input: %c\n", c);
       deposit(c, mmap);
       if (c == EOF)
       {
@@ -92,12 +95,75 @@ void streamToCharConversion(Buffer* mmap) {
     exit(EXIT_SUCCESS);
 }
 
+/* Converts carriage returns to spaces */
+void carriageReturnToBlankConversion(Buffer* mmap) {
+  char c;
+  while (1) {
+    remoove(&c, mmap);
+    if (c == '\n')
+    {
+      c = ' ';
+    }
+    // printf("char seen in carriage return -> blank function: %c\n", c);
+    deposit(c, mmap);
+    if (c == EOF)
+    {
+      break;
+    }
+  }
+}
+/* Converts consecutive asterisks -> a carat */
+void squashAsterisks(Buffer* mmap) {
+  bool seenAsterikPreviousky = false;
+  char charInBuffer;
+  while (1) {
+    remoove(&charInBuffer, mmap);
+    if (seenAsterikPreviousky)
+    {
+      // uses current char and seen asterisk previously glag to determine output to producer buffer
+      if (charInBuffer == '*') {
+        deposit('^', mmap);
+      } else {
+        deposit('*', mmap);
+      }
+    }
+    else if (charInBuffer == '*') {
+      seenAsterikPreviousky = true;
+    } else {
+      deposit(charInBuffer, mmap);
+    }
+    if (charInBuffer == EOF) {
+      break;
+    }
+  }
+}
+
 void consumer(Buffer* mmap) {
     // reads a char from mem mapped file & print it
     char c;
+    // counts number of elements seen in array
     int count = 0;
+    // array that we will print out
     char output[OUTPUT_LEN];
-    remoove(&c, mmap);
-    putchar('\n');
+    while (1) {
+      remoove(&c, mmap);
+      if (c == EOF)
+      {
+        break;
+      }
+      output[count] = c;
+      // printf("char seen in output: %c\n", c);
+      count++;
+      if (count == OUTPUT_LEN)
+      {
+        // print all characters in output if output is full
+        for (int i = 0; i < OUTPUT_LEN; ++i)
+        {
+          printf("%c", output[i]);
+        }
+        printf("\n");
+        count = 0;
+      }
+    }
     exit(EXIT_SUCCESS);
 }

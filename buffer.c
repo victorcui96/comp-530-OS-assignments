@@ -42,7 +42,7 @@ Buffer* createMMAP(size_t size) {
 void deposit(char c, Buffer* dest) {
     sem_wait(dest->emptyBuffers);
     dest->content[dest->count] = c;
-    dest->count++;
+    dest->count = ((dest->count + 1) % (OUTPUT_LEN));
     sem_post(dest->fullBuffers);
 }
 // Consumer process
