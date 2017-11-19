@@ -26,8 +26,8 @@
 // Custom includes
 #include "helper.h"
 #include "buffer.h"
-#define SEMAPHORE_NAME "/sharedSem"
 #define ERROR -1
+#define FILENAME "tmpFileForMapping"
 // Function prototypes for each process
 void streamToCharConversion(Buffer* mmap);
 void carriageReturnToBlankConversion(Buffer* mmap);
@@ -77,19 +77,27 @@ void waitForChildren(pid_t* childpids){
 	 	}
 	}
 }
-
+/* Read from stdin and generate a stream of characters, until array is full */
 void streamToCharConversion(Buffer* mmap) {
-    // reads a char from stdin & write it to mem mapped file
-    char c = fgetc(stdin);
-    deposit(c, mmap);
-    exit(EXIT_SUCCESS); 
+    // reads a char from stdin & writes to mem mapped file, until array is full */
+    while (1) {
+      char c = fgetc(stdin);
+      deposit(c, mmap);
+      if (c == EOF)
+      {
+        // exit if we see EOF in the buffer
+        break;
+      }
+    }
+    exit(EXIT_SUCCESS);
 }
 
 void consumer(Buffer* mmap) {
     // reads a char from mem mapped file & print it
     char c;
+    int count = 0;
+    char output[OUTPUT_LEN];
     remoove(&c, mmap);
-    putchar(c);
     putchar('\n');
     exit(EXIT_SUCCESS);
 }

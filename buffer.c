@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stdio.h> 
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -35,20 +35,24 @@ Buffer* createMMAP(size_t size) {
   // O_CREAT specifies that the semaphore should be created if it does not already exist
   // S_IREAD | S_IWRTIE gives us read & write permissions on the semaphore
   // Initial value of semaphore = 1
-  state->emptyBuffers = sem_open(EMPTY_BUFFERS_SEM, O_CREAT, S_IREAD | S_IWRITE, 1);
+  state->emptyBuffers = sem_open(EMPTY_BUFFERS_SEM, O_CREAT, S_IREAD | S_IWRITE, OUTPUT_LEN);
   return state;
 }  
 // Producer process
 void deposit(char c, Buffer* dest) {
     sem_wait(dest->emptyBuffers);
-    dest->content[0] = c;
+    dest->content[dest->count] = c;
+    dest->count++;
     sem_post(dest->fullBuffers);
 }
 // Consumer process
 void remoove(char* data, Buffer* src) {
+  // prints lines to stdout
   sem_wait(src->fullBuffers);
-  *data = src->content[0];
+  *data = src->content[src->count];
+  src->count--;
   sem_post(src->emptyBuffers);
+  
 }
 void deleteMMAP(Buffer* addr) {
   // any semaphores we used must be unlinked

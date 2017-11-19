@@ -1,2 +1,2 @@
-#define OUTPUT_LEN 1
+#define OUTPUT_LEN 2
 #define ERROR -1
