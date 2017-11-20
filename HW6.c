@@ -66,7 +66,7 @@ int main(int argc, char const *argv[])
   Buffer* mmapFile2 = createMMAP(sizeof(Buffer), EMPTY_BUFFERS_SEM_2, FULL_BUFFERS_SEM_2);
   Buffer* mmapFile3 = createMMAP(sizeof(Buffer), EMPTY_BUFFERS_SEM_3, FULL_BUFFERS_SEM_3);
   // fork children
-  pid_t childpids[3];
+  pid_t childpids[4];
   childpids[0] = forkChild(streamToCharConversion, mmapFile1);
   childpids[1] = forkChildToHandleNewlineConversion(mmapFile1, mmapFile2);
   childpids[2] = forkChildToSquashingAsterisks(mmapFile2, mmapFile3);
