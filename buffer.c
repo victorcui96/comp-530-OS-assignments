@@ -1,3 +1,4 @@
+/* Buffer ADT implementation */
 #include <stdio.h> 
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,7 +11,7 @@
 // Constants
 #define EMPTY_BUFFERS_SEM "/emptyBuffers"
 #define FULL_BUFFERS_SEM "/fullBuffers"
-Buffer* createMMAP(size_t size) {
+Buffer* createMMAP(size_t size, const char* emptyBuffersSem, const char* fullBuffersSem) {
   // These are the neccessary arguments for mmap. See man mmap.
   void* addr = 0;
   int protections = PROT_READ|PROT_WRITE; //can read and write
@@ -24,18 +25,18 @@ Buffer* createMMAP(size_t size) {
     perror("error with map");
     exit(EXIT_FAILURE);
   }
-  state->emptyBuffersSem = EMPTY_BUFFERS_SEM;
-  state->fullBuffersSem = FULL_BUFFERS_SEM;
+  state->emptyBuffersSem = emptyBuffersSem;
+  state->fullBuffersSem = fullBuffersSem;
   // open the semaphore we need to use
   // O_CREAT specifies that the semaphore should be created if it does not already exist
   // S_IREAD | S_IWRTIE gives us read & write permissions on the semaphore
   // Initial value of semaphore = 0
-  state->fullBuffers = sem_open(FULL_BUFFERS_SEM, O_CREAT, S_IREAD | S_IWRITE, 0);
+  state->fullBuffers = sem_open(emptyBuffersSem, O_CREAT, S_IREAD | S_IWRITE, 0);
   // open the semaphore we need to use
   // O_CREAT specifies that the semaphore should be created if it does not already exist
   // S_IREAD | S_IWRTIE gives us read & write permissions on the semaphore
   // Initial value of semaphore = 1
-  state->emptyBuffers = sem_open(EMPTY_BUFFERS_SEM, O_CREAT, S_IREAD | S_IWRITE, OUTPUT_LEN);
+  state->emptyBuffers = sem_open(fullBuffersSem, O_CREAT, S_IREAD | S_IWRITE, OUTPUT_LEN);
   return state;
 }  
 // Producer process
@@ -52,7 +53,6 @@ void remoove(char* data, Buffer* src) {
   *data = src->content[src->count];
   src->count--;
   sem_post(src->emptyBuffers);
-  
 }
 void deleteMMAP(Buffer* addr) {
   // any semaphores we used must be unlinked
